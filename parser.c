@@ -24,7 +24,8 @@ void statement();
 void condition();
 void expression();
 void term();
-void codeGen();
+void growStack(int sp);
+void pushToStack(int localCount);
 void get();
 int isRelation();
 void error(int);
@@ -45,6 +46,10 @@ void parser(int directive)
 
 void block()
 {
+	// Count of local variables / constants
+	int localCount = 0;
+	sp = 4;
+
 	if(strcmp(token, "constsym") == 0)
 	{
 		do
@@ -67,6 +72,7 @@ void block()
 			sp++;
 			symbolTable[symbolIndex].value = stringToInt(token);
 			symbolTable[symbolIndex].address = sp;
+			localCount++;
 
 			get();
 		}while(strcmp(token, "commasym") == 0);
@@ -85,20 +91,29 @@ void block()
 			if(strcmp(token, "identsym") != 0)
 				error(4);
 
+				sp++;
+				strcpy(symbolTable[symbolIndex].name, token);
+				symbolTable[symbolIndex].kind = 2;
+				symbolTable[symbolIndex].address = sp;
+				localCount++;
+
 			get();
 		}while(strcmp(token, "commasym") == 0);
 
 		if(strcmp(token, "semicolonsym") != 0)
 			error(5);
 
-		localCount++;
+		sp++;
 	}
 
-	// This is how we do code generation.
-	fprintf("6 0 0 %d", localCount);
+	// Code generation
+	// TODO: Passing in SP won't work once we implement procedures
+	growStack(sp);
+	pushToStack(localCount);
 
 	while(strcmp(token, "procsym") == 0)
 	{
+		printf("Error: Procedures are note supported.\n");
 		get();
 		if(strcmp(token, "identsym") != 0)
 			erorr(4);
@@ -134,6 +149,7 @@ void statement()
 	}
 	else if(strcmp(token, "callsym") == 0)
 	{
+		printf("Error: procedures are not supported.\n");
 		get();
 		if(strcmp(token, "identsym") != 0)
 			error(14);
@@ -223,6 +239,24 @@ void factor()
 		get();
 	}
 	printf("Error:");
+}
+
+void growStack(int numToAllocate)
+{
+	fprintf("6 0 0 %d\n", numToAllocate);
+	return;
+}
+
+void pushToStack(int numToPush);
+{
+	int i;
+	for(i = 0; i < amount; i++)
+	{
+		// Lit the value into register i
+		fprintf("1 %d 0 %d\n", i, symbolTable[i+symbolIndex-numToPush].value);
+		// Store it on the stack
+		fprintf("4 %d 0 %d\n", i, symbolTable[i+symbolIndex-numToPush].address);
+	}
 }
 
 void get()
