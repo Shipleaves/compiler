@@ -17,7 +17,7 @@ void term();
 void codeGen();
 void get();
 int isRelation();
-void printError(int);
+void error(int);
 
 void parser(int directive)
 {
@@ -28,7 +28,7 @@ void parser(int directive)
 	get();
 	block();
 	if(strcmp(token, "periodsym") != 0)
-		printf("Error: expected periodsym at EOF.");
+		error(9);
 
 	return;
 }
@@ -41,54 +41,54 @@ void block()
 		{
 			get();
 			if(strcmp(token, "identsym") != 0)
-				printf("Error: expected constant identifier.");
+				error(4);
 
 			get();
 			if(strcmp(token, "eqsym") != 0)
-				printf("Error: expected assignment operator.");
+				error(13);
 
 			get();
 			if(!isNumber())
-				printf("Error: expected number.");
+				error(2);
 
 			get();
 		}while(strcmp(token, "commasym") == 0);
 
 		if(strcmp(token, "semicolonsym") != 0)
-			printf("Error: expected semicolon at end of constant declarations.");
+			error(5);
 
 		get();
 	}
 
-	if(strcmp(token, "intsym") == 0)
+	if(strcmp(token, "varsym") == 0)
 	{
 		do
 		{
 			get();
 			if(strcmp(token, "identsym") != 0)
-				printf("Error: expected variable identifier.");
+				error(4);
 
 			get();
 		}while(strcmp(token, "commasym") == 0);
 
 		if(strcmp(token, "semicolonsym") != 0)
-			printf("Error: expected semicolon at end of variable declarations.");
+			error(5);
 	}
 
 	while(strcmp(token, "procsym") == 0)
 	{
 		get();
 		if(strcmp(token, "identsym") != 0)
-			printf("Error: expected procedure identifier.");
+			erorr(4);
 
 		get();
 		if(strcmp(token, "semicolonsym") != 0)
-			printf("Error: expected semicolon after procedure declaration.");
+			error(5);
 
 		get();
 		block();
 		if(strcmp(token, "semicolonsym") != 0)
-			printf("Error: expected semicolon after procedure definition.");
+			error(5);
 
 		get();
 	}
@@ -101,7 +101,10 @@ void statement()
 	{
 		get();
 		if(strcmp(token, "beceomessym") != 0)
-			printf("Error: expected assignment operator.");
+			if(strcmp(token, "eqsym") == 0)
+				error(1);
+			else
+				error(13);
 
 		get();
 		expression();
@@ -110,7 +113,10 @@ void statement()
 	{
 		get();
 		if(strcmp(token, "identsym") != 0)
-			printf("Error: expected procedure identifier.");
+			error(14);
+
+		if(isConstant() || isVariable())
+				error(15);
 
 		get();
 	}
@@ -126,7 +132,7 @@ void statement()
 	}
 
 	if(strcmp(token, "endsym") != 0)
-		printf("Error: expected end keyword.");
+		error(8);
 
 	get();
 
@@ -144,7 +150,7 @@ void condition()
 	{
 		expression();
 		if(!isRelation())
-			printf("Error: expected relation operator.");
+			error(20);
 
 		get();
 		expression();
@@ -188,7 +194,7 @@ void factor()
 		get();
 		expression();
 		if(strcmp(token, ")") != 0)
-			printf("Error: expected close parentheses.");
+			error(22);
 		get();
 	}
 	printf("Error:");
@@ -203,4 +209,43 @@ void get()
 int isRelation()
 {
 	return 1;
+}
+
+void error(int errorCode)
+{
+	switch(errorCode)
+	{
+		case 1:
+			printf("Error: found = when expecting :=");
+			break;
+		case 2:
+			printf("Error: = must be followed by a number.");
+			break;
+		case 4:
+			printf("Error: const, var, procedure must be followed by identifier.");
+			break;
+		case 5:
+			printf("Error: expected semicolon or comma.");
+			break;
+		case 8:
+			printf("Error: incorrect symbol after statement part in block.");
+		case 9:
+			printf("Error: expected period.");
+			break;
+		case 13:
+			printf("Error: expected assignment operator.");
+			break;
+		case 14:
+			printf("Error: call must be followed by an identifier.");
+			break;
+		case 15:
+			printf("Error: call of a constant or variable is meaningless");
+			break;
+		case 20:
+			printf("Error: expected relation operator.");
+			break;
+		case 22:
+			printf("Error: expected close parenthesis.");
+			break;
+	}
 }
