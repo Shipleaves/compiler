@@ -1,3 +1,7 @@
+// Austin Shipley
+// 3/26/2017
+// parser.c for COP3402 System Software with Euripides Montagne HW3
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,7 +35,7 @@ void parser(int);
 void block();
 void statement();
 void condition();
-int expression();
+void expression();
 void term();
 void factor();
 void get();
@@ -53,6 +57,10 @@ void parser(int directive)
 	if(token != periodsym)
 		error(9);
 
+	// Halt execution
+	fprintf(out, "11 0 0 3");
+
+	// Print the generated source code
 	if(directive)
 		print();
 
@@ -108,7 +116,7 @@ void block()
 		// Put the value in a register
 		fprintf(out, "1 %d 0 %d\n", i, symbolTable[symbolIndex-localCount+i].value);
 		// Store the value on the stack
-		fprintf(out, "3 %d 0 %d\n", i, symbolTable[symbolIndex-localCount+i].address);
+		fprintf(out, "4 %d 0 %d\n", i, symbolTable[symbolIndex-localCount+i].address);
 	}
 	localCount = 0;
 
@@ -123,6 +131,7 @@ void block()
 				strcpy(symbolTable[symbolIndex].name, lexeme);
 				symbolTable[symbolIndex].kind = 2;
 				symbolTable[symbolIndex].address = sp;
+				symbolIndex++;
 				localCount++;
 				sp++;
 
@@ -186,8 +195,8 @@ void statement()
 		get();
 		expression();
 
-		// Store the result of the expression, which is in register[regCount], on the stack
-		fprintf(out, "4 %d 0 %d", regCount, symbolTable[symbolTableIndex].address);
+		// Store the result of the expression, which is in register[regCount-1], on the stack
+		fprintf(out, "4 %d 0 %d\n", regCount-1, symbolTable[symbolTableIndex].address);
 	}
 	else if(token == callsym)
 	{
@@ -196,7 +205,8 @@ void statement()
 		if(token != identsym)
 			error(14);
 
-		if(isConstant() || isVariable())
+		// If constant or variable, we can't call those
+		if(getKind() == 1 || getKind() == 2)
 				error(15);
 
 		get();
@@ -272,7 +282,7 @@ void expression()
 		else if(token == minussym)
 		{
 			get();
-			fprintf(out, "12 %d %d 0", regCount, ++regCount);
+			fprintf(out, "12 %d %d 0\n", regCount, ++regCount);
 			regCount++;
 		}
 	}
@@ -284,14 +294,14 @@ void expression()
 		{
 			get();
 			term();
-			fprintf(out, "13 %d %d %d", regCount, regCount-2, regCount-1);
+			fprintf(out, "13 %d %d %d\n", regCount, regCount-2, regCount-1);
 			regCount++;
 		}
 		else if(token == minussym)
 		{
 			get();
 			term();
-			fprintf(out, "14 %d %d %d", regCount, regCount-2, regCount-1);
+			fprintf(out, "14 %d %d %d\n", regCount, regCount-2, regCount-1);
 			regCount++;
 		}
 		term();
@@ -308,12 +318,12 @@ void term()
 		factor();
 		if(token == multsym)
 		{
-			fprintf(out, "15 %d %d %d", regCount, regCount-2, regCount-1);
+			fprintf(out, "15 %d %d %d\n", regCount, regCount-2, regCount-1);
 			regCount++;
 		}
 		else if(token == slashsym)
 		{
-			fprintf(out, "16 %d %d %d", regCount, regCount-2, regCount-1);
+			fprintf(out, "16 %d %d %d\n", regCount, regCount-2, regCount-1);
 			regCount++;
 		}
 	}
@@ -328,14 +338,14 @@ void factor()
 	if(token == identsym)
 	{
 		value = findIdentifier();
-		fprintf(out, "3 %d 0 %d", regCount, symbolTable[value].address);
+		fprintf(out, "3 %d 0 %d\n", regCount, symbolTable[value].address);
 		regCount++;
 		get();
 	}
 	else if(token == numbersym)
 	{
 		value = atoi(lexeme);
-		fprintf("1 %d 0 %d", regCount, value);
+		fprintf(out, "1 %d 0 %d\n", regCount, value);
 		regCount++;
 		get();
 	}
