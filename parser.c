@@ -8,26 +8,32 @@ typedef struct
 {
 	int kind; 		// const = 1, var = 2, proc = 3
 	char name[12];	// name up to 11 chars
-	int val; 		// number
+	int value; 		// number
 	int level; 		// L level
-	int addr; 		// M address
+	int address; 		// M address
 }symbol;
 
 symbol symbolTable[5000];
+int rf[5000];
 char* token;
-int instructionPointer = 0, symbolIndex = 0, sp = 0; flag = 0, level = 0;  regCount= 0;
+int instructionPointer = 0, symbolIndex = 0, sp = 0, flag = 0, level = 0,  regCount= 0;
 FILE* out;
 
-void parser(int flag);
+void parser(int);
 void block();
 void statement();
 void condition();
 void expression();
 void term();
-void growStack(int sp);
-void pushToStack(int localCount);
+void factor();
+void growStack(int);
+void pushToStack(int);
 void get();
 int isRelation();
+int number();
+int isVariable();
+int isConstant();
+int stringToInt(char*);
 void error(int);
 
 void parser(int directive)
@@ -37,6 +43,7 @@ void parser(int directive)
 	flag = directive;
 
 	get();
+	printf("%s", token);
 	block();
 	if(strcmp(token, "periodsym") != 0)
 		error(9);
@@ -48,7 +55,7 @@ void block()
 {
 	// Count of local variables / constants
 	int localCount = 0;
-	sp = 4;
+	sp += 4;
 
 	if(strcmp(token, "constsym") == 0)
 	{
@@ -66,7 +73,7 @@ void block()
 				error(3);
 
 			get();
-			if(!isNumber())
+			if(!number())
 				error(2);
 
 			sp++;
@@ -102,8 +109,6 @@ void block()
 
 		if(strcmp(token, "semicolonsym") != 0)
 			error(5);
-
-		sp++;
 	}
 
 	// Code generation
@@ -116,7 +121,7 @@ void block()
 		printf("Error: Procedures are note supported.\n");
 		get();
 		if(strcmp(token, "identsym") != 0)
-			erorr(4);
+			error(4);
 
 		get();
 		if(strcmp(token, "semicolonsym") != 0)
@@ -228,7 +233,7 @@ void factor()
 {
 	if(strcmp(token, "identsym") == 0)
 		get();
-	else if(isNumber())
+	else if(number())
 		get();
 	else if(strcmp(token, "(") == 0)
 	{
@@ -243,31 +248,55 @@ void factor()
 
 void growStack(int numToAllocate)
 {
-	fprintf("6 0 0 %d\n", numToAllocate);
+	fprintf(out, "6 0 0 %d\n", numToAllocate);
 	return;
 }
 
-void pushToStack(int numToPush);
+void pushToStack(int numToPush)
 {
 	int i;
-	for(i = 0; i < amount; i++)
+	for(i = 0; i < numToPush; i++)
 	{
 		// Lit the value into register i
-		fprintf("1 %d 0 %d\n", i, symbolTable[i+symbolIndex-numToPush].value);
+		fprintf(out, "1 %d 0 %d\n", i, symbolTable[i+symbolIndex-numToPush].value);
 		// Store it on the stack
-		fprintf("4 %d 0 %d\n", i, symbolTable[i+symbolIndex-numToPush].address);
+		fprintf(out, "4 %d 0 %d\n", i, symbolTable[i+symbolIndex-numToPush].address);
 	}
 }
 
 void get()
 {
-	strcpy(token, lexemeTable[instructionPointer++]);
+	printf("%s", lexemeTable[0]);
+	strcpy(token, lexemeTable[instructionPointer]);
+	instructionPointer++;
+	printf("gotten");
 	return;
 }
 
 int isRelation()
 {
 	return 1;
+}
+
+// Poorly named because isNumber() is already used in lexer.c
+int number()
+{
+	return 1;
+}
+
+int isConstant()
+{
+	return 1;
+}
+
+int isVariable()
+{
+	return 1;
+}
+
+int stringToInt(char* number)
+{
+	return 12;
 }
 
 void error(int errorCode)
