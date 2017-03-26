@@ -263,16 +263,21 @@ void statement()
 
 void condition()
 {
-	if(token != oddsym)
+	if(token == oddsym)
 	{
 		get();
 		expression();
+
+		// Mod register[regCount-1] by 2 and store result in same register
+		sprintf(code[programCounter++], "17 %d 0 0", regCount-1);
 	}
 	else
 	{
 		expression();
 		if(!isRelation())
 			error(20);
+
+		int relation = token;
 
 		get();
 		expression();

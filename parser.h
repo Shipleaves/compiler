@@ -6,6 +6,7 @@
 #define PARSER_H
 
 extern char** code;
+extern int programCounter;
 
 extern void parser(int);
 
