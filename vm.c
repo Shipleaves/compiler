@@ -75,8 +75,8 @@ void execute(FILE *in, FILE *out, char **opcode, instruction *inst, int length)
 {
     // An instruction struct to represent the current instruction
     instruction ir;
-    // Arrays to simulate the stack and the 16 registers in the Register File
-    int stack[2000] = {0}, rf[16] = {0};
+    // Arrays to simulate the stack and the registers in the Register File
+    int stack[2000] = {0}, rf[5000] = {0};
     // Another array to track where to put pipes for the activation records
     int ar[1000] = {0};
     int pc = 0, bp = 1, sp= 0;

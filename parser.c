@@ -37,10 +37,8 @@ void factor();
 void get();
 int isRelation();
 int number();
-int isVariable();
-int isConstant();
+int getKind();
 int findIdentifier();
-int stringToInt(char*);
 void print();
 void error(int);
 
@@ -87,7 +85,7 @@ void block()
 			if(!number())
 				error(2);
 
-			symbolTable[symbolIndex].value = stringToInt(lexeme);
+			symbolTable[symbolIndex].value = atoi(lexeme);
 			symbolTable[symbolIndex].address = sp;
 			symbolIndex++;
 			localCount++;
@@ -103,14 +101,14 @@ void block()
 	}
 
 	// Allocate space on the stack
-	fprintf(out, "6 0 0 %d", sp);
+	fprintf(out, "6 0 0 %d\n", sp);
 
 	for(i = 0; i < localCount; i++)
 	{
 		// Put the value in a register
-		fprintf(out, "1 %d 0 %d", i, symbolTable[symbolIndex-localCount+i].value);
+		fprintf(out, "1 %d 0 %d\n", i, symbolTable[symbolIndex-localCount+i].value);
 		// Store the value on the stack
-		fprintf(out, "3 %d 0 %d", i, symbolTable[symbolIndex-localCount+i].address);
+		fprintf(out, "3 %d 0 %d\n", i, symbolTable[symbolIndex-localCount+i].address);
 	}
 	localCount = 0;
 
@@ -133,15 +131,17 @@ void block()
 
 		if(token != semicolonsym)
 			error(5);
+
+		get();
 	}
 
 	// Allocate space on the stack
-	fprintf(out, "6 0 0 %d", localCount);
+	fprintf(out, "6 0 0 %d\n", localCount);
 	localCount = 0;
 
 	while(token == procsym)
 	{
-		printf("Error: Procedures are note supported.\n");
+		printf("Error: procedures are not supported.\n");
 		get();
 		if(token != identsym)
 			error(4);
@@ -167,9 +167,14 @@ void statement()
 
 	if(token == identsym)
 	{
+		// Find identifier's location in the symbolTable
 		symbolTableIndex = findIdentifier();
 		if(symbolTableIndex < 0)
 			error(11);
+
+		// If not variable
+		if(symbolTable[symbolTableIndex].kind != 2)
+			error(12);
 
 		get();
 		if(token != becomessym)
@@ -180,6 +185,9 @@ void statement()
 
 		get();
 		expression();
+
+		// Store the result of the expression, which is in register[regCount], on the stack
+		fprintf(out, "4 %d 0 %d", regCount, symbolTable[symbolTableIndex].address);
 	}
 	else if(token == callsym)
 	{
@@ -251,15 +259,41 @@ void condition()
 	return;
 }
 
-int expression()
+void expression()
 {
+	// Unary plus and minus operators
 	if(token == plussym || token == minussym)
-		get();
+	{
+		// TODO: what is a unary plus supposed to do?
+		if(token == plussym)
+		{
+			get();
+		}
+		else if(token == minussym)
+		{
+			get();
+			fprintf(out, "12 %d %d 0", regCount, ++regCount);
+			regCount++;
+		}
+	}
 
 	term();
 	while(token == plussym || token == minussym)
 	{
-		get();
+		if(token == plussym)
+		{
+			get();
+			term();
+			fprintf(out, "13 %d %d %d", regCount, regCount-2, regCount-1);
+			regCount++;
+		}
+		else if(token == minussym)
+		{
+			get();
+			term();
+			fprintf(out, "14 %d %d %d", regCount, regCount-2, regCount-1);
+			regCount++;
+		}
 		term();
 	}
 	return;
@@ -272,16 +306,39 @@ void term()
 	{
 		get();
 		factor();
+		if(token == multsym)
+		{
+			fprintf(out, "15 %d %d %d", regCount, regCount-2, regCount-1);
+			regCount++;
+		}
+		else if(token == slashsym)
+		{
+			fprintf(out, "16 %d %d %d", regCount, regCount-2, regCount-1);
+			regCount++;
+		}
 	}
+
 	return;
 }
 
 void factor()
 {
-	if(token == varsym || token == constsym)
+	int value;
+
+	if(token == identsym)
+	{
+		value = findIdentifier();
+		fprintf(out, "3 %d 0 %d", regCount, symbolTable[value].address);
+		regCount++;
 		get();
-	else if(number())
+	}
+	else if(token == numbersym)
+	{
+		value = atoi(lexeme);
+		fprintf("1 %d 0 %d", regCount, value);
+		regCount++;
 		get();
+	}
 	else if(token == rparentsym)
 	{
 		get();
@@ -290,7 +347,12 @@ void factor()
 			error(22);
 		get();
 	}
-	printf("Error:");
+	else
+	{
+		// TODO: some error code goes here.
+	}
+
+	return;
 }
 
 void get()
@@ -314,24 +376,30 @@ int number()
 	return 1;
 }
 
-int isConstant()
+int getKind()
 {
-	return 1;
-}
+	int i;
 
-int isVariable()
-{
-	return 1;
+	for(i = 0; i < symbolIndex; i++)
+	{
+		if(strcmp(lexeme, symbolTable[i].name) == 0)
+			return symbolTable[i].kind;
+	}
+
+	return 0;
 }
 
 int findIdentifier()
 {
-	return 1;
-}
+	int i;
 
-int stringToInt(char* number)
-{
-	return 12;
+	for(i = 0; i < symbolIndex; i++)
+	{
+		if(strcmp(lexeme, symbolTable[i].name) == 0)
+			return i;
+	}
+
+	return -1;
 }
 
 void error(int errorCode)
@@ -375,7 +443,6 @@ void error(int errorCode)
 			printf("Error: undeclared identifier.\n");
 			break;
 		case 12:
-			// TODO: unused error code.
 			printf("Error: assignment to constant or procedure is not allowed.\n");
 			break;
 		case 13:
