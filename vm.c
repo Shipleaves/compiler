@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "vm.h"
 #include "parser.h"
 
@@ -75,7 +76,7 @@ void execute(FILE *out, char **opcode, instruction *inst, int length)
     // Another array to track where to put pipes for the activation records
     int ar[1000] = {0};
     int pc = 0, bp = 1, sp= 0;
-    int halt = 0, index = 0;
+    int halt = 0, index = 0, printFlag = 0, sioOutput;
 
     output("\n\nInital Values			pc    bp    sp");
 
@@ -147,22 +148,21 @@ void execute(FILE *out, char **opcode, instruction *inst, int length)
             case 9:
             case 10:
             case 11:
-                switch(ir.m)
+                if(ir.m == 1)
                 {
-                    case 1:
-                        // sio print
-                        fprintf(out, "\n%d", rf[ir.r]);
-                        if(flag)
-                            printf("\n%d", rf[ir.r]);
-                        break;
-                    case 2:
-                        // sio read
-                        scanf("%d", &rf[ir.r]);
-                        break;
-                    case 3:
-                        // sio halt
-                        halt = 1;
-                        break;
+                    // sio print
+                    sioOutput = rf[ir.r];
+                    printFlag = 1;
+                }
+                else if(ir.m == 2)
+                {
+                    // sio read
+                    scanf("%d", &rf[ir.r]);
+                }
+                else if(ir.m == 3)
+                {
+                    // sio halt
+                    halt = 1;
                 }
                 break;
             case 12:
@@ -237,6 +237,14 @@ void execute(FILE *out, char **opcode, instruction *inst, int length)
                 printf(" %4d", stack[index]);
             ++index;
         }
+
+        if(printFlag)
+        {
+            fprintf(out, "\n%d", sioOutput);    
+            printf("\n%d", sioOutput);
+
+            printFlag = 0;
+        }
     } // End while
 }
 
@@ -259,6 +267,12 @@ instruction getInst(char *codeString) {
     char *l = malloc(5 * sizeof(char));
     char *m = malloc(5 * sizeof(char));
     char *instArr[4] = {op, r, l, m};
+    int length = strlen(codeString);
+    codeString[length] = '\0';
+    op[0] = '\0';
+    r[0] = '\0';
+    l[0] = '\0';
+    m[0] = '\0';
 
     int instNum = 0;
     int strCtr = 0;
@@ -270,11 +284,14 @@ instruction getInst(char *codeString) {
             strCtr++;
         }
         else {
+            instArr[instNum][strCtr] = '\0';
             instNum++;
             strCtr = 0;
         }
+        instArr[instNum][strCtr] = '\0';
         c = codeString[codeCtr++];
     }
+
     instruction inst;
     inst.op = atoi(instArr[0]);
     inst.r = atoi(instArr[1]);

@@ -19,7 +19,7 @@ typedef struct
 char** lexemeTable;
 int* tokenTable;
 FILE* out;
-int flag;
+int flag, idx = 0;
 
 void lexer(int flag);
 int isWhitespace(int ch);
@@ -30,8 +30,8 @@ int isSymbol(int ch);
 void addIdentifier(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenCount);
 void addKeyword(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenCount, int* level);
 void addNumber(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenCount);
-int addSymbol(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenCount, int boolean);
-void handleComments(char code[], int count, int index);
+int addSymbol(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenCount);
+void handleComments(char code[], int count);
 void output(char* text);
 
 void lexer(int directive)
@@ -40,7 +40,7 @@ void lexer(int directive)
     symbol symbolTable[5000];
     char code[5000];
     char* lexeme;
-    int ch, level = 0, constants = 0, tokenCount = 0, length = 0, count = 0, index = 0;
+    int ch, level = 0, tokenCount = 0, length = 0, count = 0, endSymbol = 0;
     FILE* in;
 	in = fopen("input.txt", "r");
 	out = fopen("log.txt", "w");
@@ -80,14 +80,14 @@ void lexer(int directive)
     fclose(in);
 
     // Begin scanning the source code
-    while(index < count-1)
+    while(idx < count)
     {
-        ch = code[index];
+        ch = code[idx];
 
         // Ignore whitespace
-        while(isWhitespace(ch))
+        while(isWhitespace(ch) && idx < count)
         {
-            ch = code[++index];
+            ch = code[++idx];
         }
 
         lexeme = (char*)malloc(50*sizeof(char));
@@ -106,7 +106,7 @@ void lexer(int directive)
                 length = strlen(lexeme);
                 lexeme[length] = ch;
                 lexeme[length+1] = '\0';
-                ch = code[++index];
+                ch = code[++idx];
 				// Sometimes some kind of undetectable character gets appended
 				// and isKeyword doesn't proc on line 111, so we double check here
 				//if(isKeyword(lexeme) > 0 && !isLetter(ch))
@@ -121,13 +121,6 @@ void lexer(int directive)
             else
                 addIdentifier(lexeme, lexemeTable, tokenTable, &tokenCount);
 
-            // If we are declaring constants, we handle the = differently
-            if(strcmp(lexeme, "const") == 0)
-                constants = 1;
-            // If we find "begin", we know we are done with const declarations
-            if(strcmp(lexeme, "begin") == 0)
-                constants = 0;
-
 			// Delete the lexeme so it doesn't persist into the next block
             strcpy(lexeme, "\0");
         }
@@ -139,7 +132,7 @@ void lexer(int directive)
                 length = strlen(lexeme);
                 lexeme[length] = ch;
                 lexeme[length+1] = '\0';
-                ch = code[++index];
+                ch = code[++idx];
             }
 
             if(isLetter(ch))
@@ -160,18 +153,26 @@ void lexer(int directive)
 
         if(isSymbol(ch))
         {
-            while(!isWhitespace(ch) && !isLetter(ch) && !isNumber(ch))
+            while(!isWhitespace(ch) && !isLetter(ch) && !isNumber(ch) && idx <= count)
             {
+
                 length = strlen(lexeme);
                 lexeme[length] = ch;
                 lexeme[length+1] = '\0';
-                ch = code[++index];
+				ch = code[++idx];
+				// God damn parentheses
+				if(ch == 40 || lexeme[0] == 40)
+					break;
+				if(ch == 41 || lexeme[0] == 41)
+					break;
+				if(lexeme[0] == '/' && ch == '*')
+					handleComments(code, count);
             }
 
             if(strcmp(lexeme, "/*") == 0)
-                handleComments(code, count, index);
+                handleComments(code, count);
             else
-                addSymbol(lexeme, lexemeTable, tokenTable, &tokenCount, constants);
+                addSymbol(lexeme, lexemeTable, tokenTable, &tokenCount);
         }
 
         free(lexeme);
@@ -225,6 +226,13 @@ int isSymbol(int ch)
 {
     if((ch >= 40 && ch <=47) || (ch >= 58 && ch <= 62) )
         return 1;
+
+    return 0;
+}
+
+int isSingleSymbol(int ch)
+{
+    if(ch)
 
     return 0;
 }
@@ -373,7 +381,7 @@ void addNumber(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenCo
     *tokenCount += 1;
 }
 
-int addSymbol(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenCount, int constants)
+int addSymbol(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenCount)
 {
     int ch, length;
 
@@ -415,20 +423,9 @@ int addSymbol(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenCou
     }
     else if(strcmp(lexeme, "=") == 0)
     {
-        // if found in const declaration, is becomesym
-        if(constants)
-        {
-            strcpy(lexemeTable[*tokenCount], lexeme);
-            tokenTable[*tokenCount] = 20;
-            *tokenCount += 1;
-        }
-        // else its comparison
-        else
-        {
-            strcpy(lexemeTable[*tokenCount], lexeme);
-            tokenTable[*tokenCount] = 9;
-            *tokenCount += 1;
-        }
+        strcpy(lexemeTable[*tokenCount], lexeme);
+        tokenTable[*tokenCount] = 9;
+        *tokenCount += 1;
     }
     else if(strcmp(lexeme, ",") == 0)
     {
@@ -484,46 +481,31 @@ int addSymbol(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenCou
         tokenTable[*tokenCount] = 20;
         *tokenCount += 1;
     }
-    else
-    {
-        // Sometimes lexeme has some stuff at the end that prevents matching
-        // So we trim and try again
-        char buffer[2];
-        strncpy(buffer, lexeme, 1);
-        if(addSymbol(buffer, lexemeTable, tokenTable, tokenCount, constants))
-            return 1;
-        else
-        {
-            printf("Error: Invalid symbol: ");
-            printf("%s\n", lexeme);
-            return 0;
-        }
-    }
 
     return 1;
 }
 
-void handleComments(char code[], int count, int index)
+void handleComments(char code[], int count)
 {
     int ch;
 
     // Read until end of comment
     while(1)
     {
-    	ch = code[++index];
+    	ch = code[++idx];
         // So we don't accidentally get stuck in here forever
-        if(index >= count)
+        if(idx >= count)
         {
             printf("Error: EOF unexpectedly encountered\n");
             return;
         }
 
         // Char is *
-        if(ch == 42)
+        if(ch == '*')
         {
-            ch = code[++index];
+            ch = code[idx+1];
             // Char is /
-            if(ch == 47)
+            if(ch == '/')
             {
                 // End of comment
                 return;

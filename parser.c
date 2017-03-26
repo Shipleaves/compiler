@@ -59,6 +59,7 @@ void parser(int directive)
 
 	get();
 	block();
+	printf("is the it here %d %s\n", token, lexeme);
 	if(token != periodsym)
 		error(9);
 
@@ -91,6 +92,7 @@ void block()
 			symbolTable[symbolIndex].kind = 1;
 
 			get();
+
 			if(token != eqsym)
 				error(3);
 
@@ -226,6 +228,7 @@ void statement()
 			get();
 			statement();
 		}
+
 		// TODO: Error code 10 here? Missing semicolon between statements.
 		if(token != endsym)
 			error(8);
@@ -277,6 +280,8 @@ void statement()
 	}
 	else if(token == readsym)
 	{
+		int target;
+
 		get();
 
 		// Get the address in the symbol table of the variable
@@ -287,9 +292,12 @@ void statement()
 		// Store the value from the register in the target
 		sprintf(code[programCounter++], "4 $d 0 %d", regCount-1, symbolTable[target].address);
 
+		get();
 	}
 	else if(token == writesym)
 	{
+		int target;
+
 		get();
 
 		target = findIdentifier();
@@ -298,6 +306,12 @@ void statement()
 		sprintf(code[programCounter++], "3 %d 0 %d", regCount++, symbolTable[target].address);
 		// Write the value in the register to the screen
 		sprintf(code[programCounter++], "9 %d 0 1", regCount-1);
+
+		get();
+	}
+	else
+	{
+		printf("The empty statement\n");
 	}
 
 	return;
@@ -522,6 +536,7 @@ void error(int errorCode)
 	// Prevents VM from executing code
 	halt = 1;
 
+	printf("On line %d with token %s ", programCounter, lexeme);
 	switch(errorCode)
 	{
 		case 1:
@@ -549,6 +564,7 @@ void error(int errorCode)
 			break;
 		case 8:
 			printf("Error: incorrect symbol after statement part in block.\n");
+			break;
 		case 9:
 			printf("Error: expected period.\n");
 			break;
