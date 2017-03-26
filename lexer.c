@@ -1,4 +1,5 @@
 // Austin Shipley
+// Isaac Ehlers
 // 3/26/2017
 // lexer.c for COP3402 System Software with Euripides Montagne HW3
 
@@ -36,7 +37,6 @@ void output(char* text);
 
 void lexer(int directive)
 {
-	printf("\nBegin lexing\n\n");
     symbol symbolTable[5000];
     char code[5000];
     char* lexeme;
@@ -80,7 +80,7 @@ void lexer(int directive)
     fclose(in);
 
     // Begin scanning the source code
-    while(idx < count)
+    while(idx < count-1)
     {
         ch = code[idx];
 
@@ -153,9 +153,8 @@ void lexer(int directive)
 
         if(isSymbol(ch))
         {
-            while(!isWhitespace(ch) && !isLetter(ch) && !isNumber(ch) && idx <= count)
+            while(!isWhitespace(ch) && !isLetter(ch) && !isNumber(ch) && idx < count)
             {
-
                 length = strlen(lexeme);
                 lexeme[length] = ch;
                 lexeme[length+1] = '\0';
@@ -433,12 +432,19 @@ int addSymbol(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenCou
         tokenTable[*tokenCount] = 17;
         *tokenCount += 1;
     }
-    else if(strcmp(lexeme, ".") == 0)
+	// Don't judge me
+    else if(strcmp(lexeme, ".ÿ") == 0)
     {
         strcpy(lexemeTable[*tokenCount], lexeme);
         tokenTable[*tokenCount] = 19;
         *tokenCount += 1;
     }
+	else if(strcmp(lexeme, ".") == 0)
+	{
+		strcpy(lexemeTable[*tokenCount], lexeme);
+        tokenTable[*tokenCount] = 19;
+        *tokenCount += 1;
+	}
     else if(strcmp(lexeme, "<") == 0)
     {
             strcpy(lexemeTable[*tokenCount], lexeme);

@@ -1,4 +1,5 @@
 // Austin Shipley
+// Isaac Ehlers
 // 3/26/2017
 // parser.h for COP3402 System Software with Euripides Montagne HW3
 

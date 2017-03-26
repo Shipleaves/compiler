@@ -1,4 +1,5 @@
 // Austin Shipley
+// Isaac Ehlers
 // 3/26/2017
 // vm.c for COP3402 System Software with Euripides Montagne HW3
 
@@ -31,11 +32,9 @@ instruction getInst(char *codeString);
 void vm(int directive)
 {
 
-    // IF HALT RETURN!
-    // IF HALT RETURN!
-    // IF HALT RETURN!
+    if(halt)
+        return;
 
-    printf("\nBegin VM\n\n");
     // An array for easy access to opcodes
     // The 0th entry is blank to make the rest 1-based
     char *opcode[25] = { "",
@@ -76,7 +75,7 @@ void execute(FILE *out, char **opcode, instruction *inst, int length)
     // Another array to track where to put pipes for the activation records
     int ar[1000] = {0};
     int pc = 0, bp = 1, sp= 0;
-    int halt = 0, index = 0, printFlag = 0, sioOutput;
+    int halt = 0, index = 0, printFlag = 0, readFlag = 0, sioOutput;
 
     output("\n\nInital Values			pc    bp    sp");
 
@@ -157,7 +156,7 @@ void execute(FILE *out, char **opcode, instruction *inst, int length)
                 else if(ir.m == 2)
                 {
                     // sio read
-                    scanf("%d", &rf[ir.r]);
+                    readFlag = 1;
                 }
                 else if(ir.m == 3)
                 {
@@ -240,11 +239,19 @@ void execute(FILE *out, char **opcode, instruction *inst, int length)
 
         if(printFlag)
         {
-            fprintf(out, "\n%d", sioOutput);    
+            fprintf(out, "\n%d", sioOutput);
             printf("\n%d", sioOutput);
 
             printFlag = 0;
         }
+
+        if(readFlag)
+        {
+            printf("\nEnter a value: ");
+            scanf("%d", &rf[ir.r]);
+            readFlag = 0;
+        }
+
     } // End while
 }
 

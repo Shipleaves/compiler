@@ -1,4 +1,5 @@
 // Austin Shipley
+// Isaac Ehlers
 // 3/26/2017
 // parser.c for COP3402 System Software with Euripides Montagne HW3
 
@@ -15,6 +16,7 @@ typedef struct
 	int value; 		// number
 	int level; 		// L level
 	int address; 		// M address
+	int reg;
 }symbol;
 
 symbol symbolTable[5000];
@@ -48,7 +50,6 @@ void print(int);
 
 void parser(int directive)
 {
-	printf("\nBegin parsing\n\n");
 	out = fopen("instructions.txt", "w");
 	int i;
 	lexeme = malloc(20*sizeof(char));
@@ -59,7 +60,7 @@ void parser(int directive)
 
 	get();
 	block();
-	printf("is the it here %d %s\n", token, lexeme);
+
 	if(token != periodsym)
 		error(9);
 
@@ -290,7 +291,7 @@ void statement()
 		// Read the user input and store it in a register
 		sprintf(code[programCounter++], "10 %d 0 2", regCount++);
 		// Store the value from the register in the target
-		sprintf(code[programCounter++], "4 $d 0 %d", regCount-1, symbolTable[target].address);
+		sprintf(code[programCounter++], "4 %d 0 %d", regCount-1, symbolTable[target].address);
 
 		get();
 	}
@@ -308,10 +309,6 @@ void statement()
 		sprintf(code[programCounter++], "9 %d 0 1", regCount-1);
 
 		get();
-	}
-	else
-	{
-		printf("The empty statement\n");
 	}
 
 	return;
@@ -377,6 +374,8 @@ void condition()
 
 void expression()
 {
+	int firstTerm;
+
 	// Unary plus and minus operators
 	if(token == plussym || token == minussym)
 	{
@@ -390,8 +389,7 @@ void expression()
 		{
 			get();
 			term();
-			sprintf(code[programCounter++], "12 %d %d 0", regCount, regCount-1);
-			regCount++;
+			sprintf(code[programCounter++], "12 %d %d 0", regCount-1, regCount-1);
 		}
 	}
 	else
@@ -403,15 +401,15 @@ void expression()
 		{
 			get();
 			term();
-			sprintf(code[programCounter++], "13 %d %d %d", regCount, regCount-2, regCount-1);
-			regCount++;
+			sprintf(code[programCounter++], "13 %d %d %d", regCount-2, regCount-2, regCount-1);
+			regCount--;
 		}
 		else if(token == minussym)
 		{
 			get();
 			term();
-			sprintf(code[programCounter++], "14 %d %d %d", regCount, regCount-2, regCount-1);
-			regCount++;
+			sprintf(code[programCounter++], "14 %d %d %d", regCount-2, regCount-2, regCount-1);
+			regCount--;
 		}
 		term();
 	}
@@ -427,15 +425,15 @@ void term()
 		{
 			get();
 			factor();
-			sprintf(code[programCounter++], "15 %d %d %d", regCount, regCount-2, regCount-1);
-			regCount++;
+			sprintf(code[programCounter++], "15 %d %d %d", regCount-2, regCount-2, regCount-1);
+			regCount--;
 		}
 		else if(token == slashsym)
 		{
 			get();
 			factor();
-			sprintf(code[programCounter++], "16 %d %d %d", regCount, regCount-2, regCount-1);
-			regCount++;
+			sprintf(code[programCounter++], "16 %d %d %d", regCount-2, regCount-2, regCount-1);
+			regCount--;
 		}
 	}
 
@@ -466,11 +464,11 @@ void factor()
 		regCount++;
 		get();
 	}
-	else if(token == rparentsym)
+	else if(token == lparentsym)
 	{
 		get();
 		expression();
-		if(token != lparentsym)
+		if(token != rparentsym)
 			error(22);
 		get();
 	}
