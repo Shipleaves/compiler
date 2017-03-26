@@ -7,8 +7,6 @@
 #include "vm.h"
 #include "parser.h"
 
-// Git test!
-
 typedef struct
 {
     int op;
@@ -24,12 +22,18 @@ FILE* out;
 int flag;
 
 void vm(int);
-void execute(FILE *in, FILE *out, char **opcode, instruction *inst, int numInst);
+void execute(FILE *out, char **opcode, instruction *inst, int numInst);
 int base(int *stack, int l, int base);
 void output(char*);
+instruction getInst(char *codeString);
 
 void vm(int directive)
 {
+
+    // IF HALT RETURN!
+    // IF HALT RETURN!
+    // IF HALT RETURN!
+
     printf("\nBegin VM\n\n");
     // An array for easy access to opcodes
     // The 0th entry is blank to make the rest 1-based
@@ -38,16 +42,8 @@ void vm(int directive)
         "sio", "sio", "sio", "neg", "add", "sub", "mul", "div",
         "odd", "mod", "eql", "neq", "lss", "leq", "gtr", "geq"
     };
-    int i = 0;
-    FILE* in = fopen("instructions.txt", "r");
     out = fopen("log.txt", "w");
     flag = directive;
-
-    if(in == NULL || out == NULL)
-    {
-        output("File pointer failure.");
-        return;
-    }
 
     // Print the header
     output("Line	OP	R	L	M");
@@ -55,30 +51,22 @@ void vm(int directive)
     // This while loop reads in and stores the instructions
     // Then formats and prints them, as long as there are instructions to be read.
     // fscanf returns the number of successful reads, hopefully 4 in our case
-    while(fscanf(in, "%d %d %d %d", &inst[i].op, &inst[i].r, &inst[i].l, &inst[i].m) == 4)
+    int i = 0;
+    for(i = 0; i < programCounter; i++)
     {
-        fprintf(out, "\n%3d %7s %5d %7d %7d", i, opcode[inst[i].op], inst[i].r, inst[i].l, inst[i].m);
+        inst[i] = getInst(code[i]);
         if(flag)
             printf("\n%3d %7s %5d %7d %7d", i, opcode[inst[i].op], inst[i].r, inst[i].l, inst[i].m);
-        i++;
     }
 
-    // Check if read terminated due to EOF or an error
-    if (!feof(in))
-    {
-        output("\nThe instructions were not read in successfully. Please see the readme for debugging help.");
-        return;
-    }
+    execute(out, opcode, inst, i);
 
-    execute(in, out, opcode, inst, i);
-
-    fclose(in);
     fclose(out);
 
     return;
 }
 
-void execute(FILE *in, FILE *out, char **opcode, instruction *inst, int length)
+void execute(FILE *out, char **opcode, instruction *inst, int length)
 {
     // An instruction struct to represent the current instruction
     instruction ir;
@@ -169,7 +157,7 @@ void execute(FILE *in, FILE *out, char **opcode, instruction *inst, int length)
                         break;
                     case 2:
                         // sio read
-                        fscanf(in, "%d", &rf[ir.r]);
+                        scanf("%d", &rf[ir.r]);
                         break;
                     case 3:
                         // sio halt
@@ -263,4 +251,35 @@ int base(int *stack, int l, int base)
     }
 
     return b1;
+}
+
+instruction getInst(char *codeString) {
+    char *op = malloc(5 * sizeof(char));
+    char *r = malloc(5 * sizeof(char));
+    char *l = malloc(5 * sizeof(char));
+    char *m = malloc(5 * sizeof(char));
+    char *instArr[4] = {op, r, l, m};
+
+    int instNum = 0;
+    int strCtr = 0;
+    int codeCtr = 0;
+    char c = codeString[codeCtr++];
+    while(c != '\0') {
+        if(c != ' ') {
+            instArr[instNum][strCtr] = c;
+            strCtr++;
+        }
+        else {
+            instNum++;
+            strCtr = 0;
+        }
+        c = codeString[codeCtr++];
+    }
+    instruction inst;
+    inst.op = atoi(instArr[0]);
+    inst.r = atoi(instArr[1]);
+    inst.l = atoi(instArr[2]);
+    inst.m = atoi(instArr[3]);
+
+    return inst;
 }
