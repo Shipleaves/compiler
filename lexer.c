@@ -27,14 +27,14 @@ void addIdentifier(char* lexeme, char* lexemeTable[], int tokenTable[], int* tok
 void addKeyword(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenCount, int* level);
 void addNumber(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenCount);
 int addSymbol(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenCount, int boolean);
-void handleComments(char input[], int count, int index);
+void handleComments(char code[], int count, int index);
 void output(char* text);
 
 void lexer(int directive)
 {
 	printf("\nBegin lexing\n\n");
     symbol symbolTable[5000];
-    char input[5000];
+    char code[5000];
     char* lexeme;
     int ch, level = 0, constants = 0, tokenCount = 0, length = 0, count = 0, index = 0;
     FILE* in;
@@ -61,7 +61,7 @@ void lexer(int directive)
 
     count = 0;
 
-    // Print out the source code and put it into the input array
+    // Print out the source code and put it into the code array
     output("Source Program:\n");
     while(!feof(in))
     {
@@ -70,7 +70,7 @@ void lexer(int directive)
 		if(flag)
 			printf("%c", ch);
 
-        input[count] = ch;
+        code[count] = ch;
         count++;
     }
     fclose(in);
@@ -78,12 +78,12 @@ void lexer(int directive)
     // Begin scanning the source code
     while(index < count-1)
     {
-        ch = input[index];
+        ch = code[index];
 
         // Ignore whitespace
         while(isWhitespace(ch))
         {
-            ch = input[++index];
+            ch = code[++index];
         }
 
         lexeme = (char*)malloc(50*sizeof(char));
@@ -102,7 +102,7 @@ void lexer(int directive)
                 length = strlen(lexeme);
                 lexeme[length] = ch;
                 lexeme[length+1] = '\0';
-                ch = input[++index];
+                ch = code[++index];
 				// Sometimes some kind of undetectable character gets appended
 				// and isKeyword doesn't proc on line 111, so we double check here
 				//if(isKeyword(lexeme) > 0 && !isLetter(ch))
@@ -135,7 +135,7 @@ void lexer(int directive)
                 length = strlen(lexeme);
                 lexeme[length] = ch;
                 lexeme[length+1] = '\0';
-                ch = input[++index];
+                ch = code[++index];
             }
 
             if(isLetter(ch))
@@ -161,15 +161,15 @@ void lexer(int directive)
                 length = strlen(lexeme);
                 lexeme[length] = ch;
                 lexeme[length+1] = '\0';
-                ch = input[++index];
+                ch = code[++index];
             }
 
             if(strcmp(lexeme, "/*") == 0)
-                handleComments(input, count, index);
+                handleComments(code, count, index);
             else
                 addSymbol(lexeme, lexemeTable, tokenTable, &tokenCount, constants);
         }
-		
+
         free(lexeme);
     }
 
@@ -499,14 +499,14 @@ int addSymbol(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenCou
     return 1;
 }
 
-void handleComments(char input[], int count, int index)
+void handleComments(char code[], int count, int index)
 {
     int ch;
 
     // Read until end of comment
     while(1)
     {
-    	ch = input[++index];
+    	ch = code[++index];
         // So we don't accidentally get stuck in here forever
         if(index >= count)
         {
@@ -517,7 +517,7 @@ void handleComments(char input[], int count, int index)
         // Char is *
         if(ch == 42)
         {
-            ch = input[++index];
+            ch = code[++index];
             // Char is /
             if(ch == 47)
             {
