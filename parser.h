@@ -5,6 +5,8 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+extern char** code;
+
 extern void parser(int);
 
 #endif

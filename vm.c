@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "vm.h"
+#incldue "parser.h"
 
 typedef struct
 {

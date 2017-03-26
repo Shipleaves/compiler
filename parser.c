@@ -244,6 +244,7 @@ void statement()
 	}
 	else if(token == whilesym)
 	{
+		int jumpAddress = programCounter;
 		get();
 		condition();
 		if(token != dosym)
@@ -284,16 +285,19 @@ void expression()
 		if(token == plussym)
 		{
 			get();
+			term();
 		}
 		else if(token == minussym)
 		{
 			get();
-			sprintf(code[programCounter++], "12 %d %d 0\n", regCount, ++regCount);
+			term();
+			sprintf(code[programCounter++], "12 %d %d 0\n", regCount+1, regCount);
 			regCount++;
 		}
 	}
+	else
+		term();
 
-	term();
 	while(token == plussym || token == minussym)
 	{
 		if(token == plussym)
