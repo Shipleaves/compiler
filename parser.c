@@ -40,7 +40,6 @@ void expression();
 void term();
 void factor();
 void get();
-int isRelation();
 int number();
 int getKind();
 int findIdentifier();
@@ -115,14 +114,14 @@ void block()
 	}
 
 	// Allocate space on the stack
-	sprintf(code[programCounter++], "6 0 0 %d\n", sp);
+	sprintf(code[programCounter++], "6 0 0 %d", sp);
 
 	for(i = 0; i < localCount; i++)
 	{
 		// Put the value in a register
-		sprintf(code[programCounter++], "1 %d 0 %d\n", i, symbolTable[symbolIndex-localCount+i].value);
+		sprintf(code[programCounter++], "1 %d 0 %d", i, symbolTable[symbolIndex-localCount+i].value);
 		// Store the value on the stack
-		sprintf(code[programCounter++], "4 %d 0 %d\n", i, symbolTable[symbolIndex-localCount+i].address);
+		sprintf(code[programCounter++], "4 %d 0 %d", i, symbolTable[symbolIndex-localCount+i].address);
 	}
 	localCount = 0;
 
@@ -151,7 +150,7 @@ void block()
 	}
 
 	// Allocate space on the stack
-	sprintf(code[programCounter++], "6 0 0 %d\n", localCount);
+	sprintf(code[programCounter++], "6 0 0 %d", localCount);
 	localCount = 0;
 
 	while(token == procsym)
@@ -202,7 +201,7 @@ void statement()
 		expression();
 
 		// Store the result of the expression, which is in register[regCount-1], on the stack
-		sprintf(code[programCounter++], "4 %d 0 %d\n", regCount-1, symbolTable[symbolTableIndex].address);
+		sprintf(code[programCounter++], "4 %d 0 %d", regCount-1, symbolTable[symbolTableIndex].address);
 	}
 	else if(token == callsym)
 	{
@@ -234,10 +233,11 @@ void statement()
 	}
 	else if(token == ifsym)
 	{
-		int jumpInstruction;
+		int jumpInstruction, conditionReg;
 
 		get();
 		condition();
+		conditionReg = regCount-1;
 
 		// Leave a space for the jump instruction that executes if the condition is false
 		jumpInstruction = programCounter++;
@@ -249,7 +249,7 @@ void statement()
 		statement();
 
 		// We need to write in the jump instruction to skip the body of the if when the condition is false
-		sprintf(code[jumpInstruction], "8 %d 0 %d", regCount, programCounter);
+		sprintf(code[jumpInstruction], "8 %d 0 %d", conditionReg, programCounter);
 	}
 	else if(token == whilesym)
 	{
@@ -261,7 +261,7 @@ void statement()
 
 		// Leave a space for the jump instruction that executes if the condition is false
 		jumpInstruction = programCounter++;
-		conditionReg = regCount;
+		conditionReg = regCount-1;
 
 		if(token != dosym)
 			error(18);
@@ -273,7 +273,31 @@ void statement()
 		sprintf(code[programCounter++], "7 0 0 %d", loopAddress);
 
 		// We need to write in the jump instruction to skip the blcok when the condition is false
-		sprintf(code[jumpInstruction], "8 %d 0 %d", regCount, programCounter);
+		sprintf(code[jumpInstruction], "8 %d 0 %d", conditionReg, programCounter);
+	}
+	else if(token == readsym)
+	{
+		get();
+
+		// Get the address in the symbol table of the variable
+		target = findIdentifier();
+
+		// Read the user input and store it in a register
+		sprintf(code[programCounter++], "10 %d 0 2", regCount++);
+		// Store the value from the register in the target
+		sprintf(code[programCounter++], "4 $d 0 %d", regCount-1, symbolTable[target].address);
+
+	}
+	else if(token == writesym)
+	{
+		get();
+
+		target = findIdentifier();
+
+		// Load the value of the target into the registers
+		sprintf(code[programCounter++], "3 %d 0 %d", regCount++, symbolTable[target].address);
+		// Write the value in the register to the screen
+		sprintf(code[programCounter++], "9 %d 0 1", regCount-1);
 	}
 
 	return;
@@ -294,42 +318,43 @@ void condition()
 		int expression1Reg, expression2Reg;
 
 		expression();
-		expression1Reg = regCount;
-
-		if(!isRelation())
-			error(20);
+		expression1Reg = regCount-1;
 
 		int relation = token;
 
 		get();
 		expression();
-		expression2Reg = regCount;
+		expression2Reg = regCount-1;
 
 		switch(relation)
 		{
 			// equals
 			case 9:
-				sprintf(code[programCounter], "19 %d %d %d", regCount++, expression1Reg, expression2Reg);
+				sprintf(code[programCounter++], "19 %d %d %d", regCount++, expression1Reg, expression2Reg);
 				break;
 			// not equals
 			case 10:
-				sprintf(code[programCounter], "20 %d %d %d", regCount++, expression1Reg, expression2Reg);
+				sprintf(code[programCounter++], "20 %d %d %d", regCount++, expression1Reg, expression2Reg);
 				break;
 			// less than
 			case 11:
-				sprintf(code[programCounter], "21 %d %d %d", regCount++, expression1Reg, expression2Reg);
+				sprintf(code[programCounter++], "21 %d %d %d", regCount++, expression1Reg, expression2Reg);
 				break;
 			// Less than or equals
 			case 12:
-				sprintf(code[programCounter], "22 %d %d %d", regCount++, expression1Reg, expression2Reg);
+				sprintf(code[programCounter++], "22 %d %d %d", regCount++, expression1Reg, expression2Reg);
 				break;
 			// greater than
 			case 13:
-				sprintf(code[programCounter], "23 %d %d %d", regCount++, expression1Reg, expression2Reg);
+				sprintf(code[programCounter++], "23 %d %d %d", regCount++, expression1Reg, expression2Reg);
 				break;
 			// greater than or equals
 			case 14:
-				sprintf(code[programCounter], "24 %d %d %d", regCount++, expression1Reg, expression2Reg);
+				sprintf(code[programCounter++], "24 %d %d %d", regCount++, expression1Reg, expression2Reg);
+				break;
+			// Not a valid relational operator
+			default:
+				error(20);
 				break;
 		}
 	}
@@ -351,7 +376,7 @@ void expression()
 		{
 			get();
 			term();
-			sprintf(code[programCounter++], "12 %d %d 0\n", regCount, regCount-1);
+			sprintf(code[programCounter++], "12 %d %d 0", regCount, regCount-1);
 			regCount++;
 		}
 	}
@@ -364,14 +389,14 @@ void expression()
 		{
 			get();
 			term();
-			sprintf(code[programCounter++], "13 %d %d %d\n", regCount, regCount-2, regCount-1);
+			sprintf(code[programCounter++], "13 %d %d %d", regCount, regCount-2, regCount-1);
 			regCount++;
 		}
 		else if(token == minussym)
 		{
 			get();
 			term();
-			sprintf(code[programCounter++], "14 %d %d %d\n", regCount, regCount-2, regCount-1);
+			sprintf(code[programCounter++], "14 %d %d %d", regCount, regCount-2, regCount-1);
 			regCount++;
 		}
 		term();
@@ -388,14 +413,14 @@ void term()
 		{
 			get();
 			factor();
-			sprintf(code[programCounter++], "15 %d %d %d\n", regCount, regCount-2, regCount-1);
+			sprintf(code[programCounter++], "15 %d %d %d", regCount, regCount-2, regCount-1);
 			regCount++;
 		}
 		else if(token == slashsym)
 		{
 			get();
 			factor();
-			sprintf(code[programCounter++], "16 %d %d %d\n", regCount, regCount-2, regCount-1);
+			sprintf(code[programCounter++], "16 %d %d %d", regCount, regCount-2, regCount-1);
 			regCount++;
 		}
 	}
@@ -410,14 +435,20 @@ void factor()
 	if(token == identsym)
 	{
 		value = findIdentifier();
-		sprintf(code[programCounter++], "3 %d 0 %d\n", regCount, symbolTable[value].address);
+		if(value < 0)
+			error(11);
+
+		sprintf(code[programCounter++], "3 %d 0 %d", regCount, symbolTable[value].address);
 		regCount++;
 		get();
 	}
 	else if(token == numbersym)
 	{
+		if(!number())
+			error(2);
+
 		value = atoi(lexeme);
-		sprintf(code[programCounter++], "1 %d 0 %d\n", regCount, value);
+		sprintf(code[programCounter++], "1 %d 0 %d", regCount, value);
 		regCount++;
 		get();
 	}
@@ -446,14 +477,17 @@ void get()
 	return;
 }
 
-int isRelation()
-{
-	return 1;
-}
-
 // Poorly named because isNumber() is already used in lexer.c
 int number()
 {
+	int i, length = strlen(lexeme);
+
+	for(i = 0; i < length; i++)
+	{
+		if(lexeme[i] < 48 || lexeme[i] > 57)
+			return 0;
+	}
+
 	return 1;
 }
 
@@ -485,7 +519,7 @@ int findIdentifier()
 
 void error(int errorCode)
 {
-	// Prevents vm from executing code
+	// Prevents VM from executing code
 	halt = 1;
 
 	switch(errorCode)
@@ -582,8 +616,8 @@ void print(int directive)
 	int i;
 	for(i = 0; i < programCounter; i++)
 	{
-		fprintf(out, "%s\n", code[i]);
+		fprintf(out, "%d: %s\n", i, code[i]);
 		if(directive)
-			printf("%s", code[i]);
+			printf("%d: %s\n", i, code[i]);
 	}
 }
