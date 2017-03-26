@@ -51,7 +51,6 @@ void parser(int directive)
 	lexeme = malloc(20*sizeof(char));
 
 	get();
-	printf("%s", lexeme);
 	block();
 	if(token != periodsym)
 		error(9);
@@ -74,7 +73,7 @@ void block()
 		do
 		{
 			get();
-			if(token != varsym || token != constsym)
+			if(token != identsym)
 				error(4);
 
 			strcpy(symbolTable[symbolIndex].name, lexeme);
@@ -205,12 +204,30 @@ void statement()
 			statement();
 		}
 		// TODO: Error code 10 here? Missing semicolon between statements.
+		if(token != endsym)
+			error(8);
+		get();
 	}
+	else if(token == ifsym)
+	{
+		get();
+		condition();
+		if(token != thensym)
+			error(16);
 
-	if(token != endsym)
-		error(8);
+		get();
+		statement();
+	}
+	else if(token == whilesym)
+	{
+		get();
+		condition();
+		if(token != dosym)
+			error(18);
 
-	get();
+		get();
+		statement();
+	}
 
 	return;
 }
@@ -282,6 +299,7 @@ void get()
 	token = tokenTable[programCounter];
 	programCounter++;
 
+	printf("%s \t %d\n", lexeme, token);
 	return;
 }
 
@@ -370,7 +388,6 @@ void error(int errorCode)
 			printf("Error: call of a constant or variable is meaningless\n");
 			break;
 		case 16:
-			// TODO: unused error code.
 			printf("Error: then expected.\n");
 			break;
 		case 17:
@@ -378,7 +395,6 @@ void error(int errorCode)
 			printf("Error: expected semicolon or }.\n");
 			break;
 		case 18:
-			// TODO: unused error code.
 			printf("Error: expected do.\n");
 			break;
 		case 19:
