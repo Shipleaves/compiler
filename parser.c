@@ -245,6 +245,7 @@ void statement()
 	else if(token == whilesym)
 	{
 		int jumpAddress = programCounter;
+
 		get();
 		condition();
 		if(token != dosym)
@@ -252,6 +253,9 @@ void statement()
 
 		get();
 		statement();
+
+		// Jump back to condition
+		sprintf(code[programCounter++], "7 0 0 %d", jumpAddress);
 	}
 
 	return;
@@ -291,7 +295,7 @@ void expression()
 		{
 			get();
 			term();
-			sprintf(code[programCounter++], "12 %d %d 0\n", regCount+1, regCount);
+			sprintf(code[programCounter++], "12 %d %d 0\n", regCount, regCount-1);
 			regCount++;
 		}
 	}
@@ -324,15 +328,17 @@ void term()
 	factor();
 	while(token == multsym || token == slashsym)
 	{
-		get();
-		factor();
 		if(token == multsym)
 		{
+			get();
+			factor();
 			sprintf(code[programCounter++], "15 %d %d %d\n", regCount, regCount-2, regCount-1);
 			regCount++;
 		}
 		else if(token == slashsym)
 		{
+			get();
+			factor();
 			sprintf(code[programCounter++], "16 %d %d %d\n", regCount, regCount-2, regCount-1);
 			regCount++;
 		}
@@ -381,7 +387,6 @@ void get()
 	token = tokenTable[currInstruction];
 	currInstruction++;
 
-	printf("%s \t %d\n", lexeme, token);
 	return;
 }
 
@@ -515,13 +520,11 @@ void error(int errorCode)
 
 void print(int directive)
 {
-	printf("printer");
-	FILE* printer = fopen("instructions.txt", "r");
-	int ch;
-	while((ch = fgetc(printer)) != EOF)
+	int i;
+	for(i = 0; i < programCounter; i++)
 	{
-		fprintf(out, "%c", ch);
+		fprintf(out, "%s\n", code[i]);
 		if(directive)
-			printf("%c", ch);
+			printf("%s", code[i]);
 	}
 }
