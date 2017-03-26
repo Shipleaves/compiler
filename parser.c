@@ -18,9 +18,10 @@ typedef struct
 }symbol;
 
 symbol symbolTable[5000];
+char** code;
 int rf[5000];
 char* lexeme;
-int token, programCounter = 0, symbolIndex = 0, sp = 0, level = 0,  regCount= 0;
+int token, currInstruction = 0, programCounter = 0, symbolIndex = 0, sp = 0, level = 0,  regCount= 0;
 FILE* out;
 
 int nulsym = 1, identsym = 2, numbersym = 3, plussym = 4, minussym = 5,
@@ -50,7 +51,12 @@ void parser(int directive)
 {
 	printf("\nBegin parsing\n\n");
 	out = fopen("instructions.txt", "w");
+	int i;
 	lexeme = malloc(20*sizeof(char));
+	code = malloc(5000*sizeof(char*));
+	for(i = 0; i < 5000; i++)
+		code[i] = malloc(10*sizeof(char));
+
 
 	get();
 	block();
@@ -58,7 +64,7 @@ void parser(int directive)
 		error(9);
 
 	// Halt execution
-	fprintf(out, "11 0 0 3");
+	sprintf(code[programCounter++], "11 0 0 3");
 
 	// Print the generated source code
 	if(directive)
@@ -109,14 +115,14 @@ void block()
 	}
 
 	// Allocate space on the stack
-	fprintf(out, "6 0 0 %d\n", sp);
+	sprintf(code[programCounter++], "6 0 0 %d\n", sp);
 
 	for(i = 0; i < localCount; i++)
 	{
 		// Put the value in a register
-		fprintf(out, "1 %d 0 %d\n", i, symbolTable[symbolIndex-localCount+i].value);
+		sprintf(code[programCounter++], "1 %d 0 %d\n", i, symbolTable[symbolIndex-localCount+i].value);
 		// Store the value on the stack
-		fprintf(out, "4 %d 0 %d\n", i, symbolTable[symbolIndex-localCount+i].address);
+		sprintf(code[programCounter++], "4 %d 0 %d\n", i, symbolTable[symbolIndex-localCount+i].address);
 	}
 	localCount = 0;
 
@@ -145,7 +151,7 @@ void block()
 	}
 
 	// Allocate space on the stack
-	fprintf(out, "6 0 0 %d\n", localCount);
+	sprintf(code[programCounter++], "6 0 0 %d\n", localCount);
 	localCount = 0;
 
 	while(token == procsym)
@@ -196,7 +202,7 @@ void statement()
 		expression();
 
 		// Store the result of the expression, which is in register[regCount-1], on the stack
-		fprintf(out, "4 %d 0 %d\n", regCount-1, symbolTable[symbolTableIndex].address);
+		sprintf(code[programCounter++], "4 %d 0 %d\n", regCount-1, symbolTable[symbolTableIndex].address);
 	}
 	else if(token == callsym)
 	{
@@ -282,7 +288,7 @@ void expression()
 		else if(token == minussym)
 		{
 			get();
-			fprintf(out, "12 %d %d 0\n", regCount, ++regCount);
+			sprintf(code[programCounter++], "12 %d %d 0\n", regCount, ++regCount);
 			regCount++;
 		}
 	}
@@ -294,14 +300,14 @@ void expression()
 		{
 			get();
 			term();
-			fprintf(out, "13 %d %d %d\n", regCount, regCount-2, regCount-1);
+			sprintf(code[programCounter++], "13 %d %d %d\n", regCount, regCount-2, regCount-1);
 			regCount++;
 		}
 		else if(token == minussym)
 		{
 			get();
 			term();
-			fprintf(out, "14 %d %d %d\n", regCount, regCount-2, regCount-1);
+			sprintf(code[programCounter++], "14 %d %d %d\n", regCount, regCount-2, regCount-1);
 			regCount++;
 		}
 		term();
@@ -318,12 +324,12 @@ void term()
 		factor();
 		if(token == multsym)
 		{
-			fprintf(out, "15 %d %d %d\n", regCount, regCount-2, regCount-1);
+			sprintf(code[programCounter++], "15 %d %d %d\n", regCount, regCount-2, regCount-1);
 			regCount++;
 		}
 		else if(token == slashsym)
 		{
-			fprintf(out, "16 %d %d %d\n", regCount, regCount-2, regCount-1);
+			sprintf(code[programCounter++], "16 %d %d %d\n", regCount, regCount-2, regCount-1);
 			regCount++;
 		}
 	}
@@ -338,14 +344,14 @@ void factor()
 	if(token == identsym)
 	{
 		value = findIdentifier();
-		fprintf(out, "3 %d 0 %d\n", regCount, symbolTable[value].address);
+		sprintf(code[programCounter++], "3 %d 0 %d\n", regCount, symbolTable[value].address);
 		regCount++;
 		get();
 	}
 	else if(token == numbersym)
 	{
 		value = atoi(lexeme);
-		fprintf(out, "1 %d 0 %d\n", regCount, value);
+		sprintf(code[programCounter++], "1 %d 0 %d\n", regCount, value);
 		regCount++;
 		get();
 	}
@@ -367,9 +373,9 @@ void factor()
 
 void get()
 {
-	strcpy(lexeme, lexemeTable[programCounter]);
-	token = tokenTable[programCounter];
-	programCounter++;
+	strcpy(lexeme, lexemeTable[currInstruction]);
+	token = tokenTable[currInstruction];
+	currInstruction++;
 
 	printf("%s \t %d\n", lexeme, token);
 	return;
