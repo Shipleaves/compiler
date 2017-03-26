@@ -1,3 +1,7 @@
+// Austin Shipley
+// 3/26/2017
+// lexer.c for COP3402 System Software with Euripides Montagne HW3
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
