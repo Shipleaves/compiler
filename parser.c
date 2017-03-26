@@ -21,7 +21,7 @@ symbol symbolTable[5000];
 char** code;
 int rf[5000];
 char* lexeme;
-int token, currInstruction = 0, programCounter = 0, symbolIndex = 0, sp = 0, level = 0,  regCount= 0;
+int halt, token, currInstruction = 0, programCounter = 0, symbolIndex = 0, sp = 0, level = 0,  regCount= 0;
 FILE* out;
 
 int nulsym = 1, identsym = 2, numbersym = 3, plussym = 4, minussym = 5,
@@ -55,7 +55,7 @@ void parser(int directive)
 	lexeme = malloc(20*sizeof(char));
 	code = malloc(5000*sizeof(char*));
 	for(i = 0; i < 5000; i++)
-		code[i] = malloc(10*sizeof(char));
+		code[i] = malloc(20*sizeof(char));
 
 
 	get();
@@ -234,20 +234,35 @@ void statement()
 	}
 	else if(token == ifsym)
 	{
+		int jumpInstruction;
+
 		get();
 		condition();
+
+		// Leave a space for the jump instruction that executes if the condition is false
+		jumpInstruction = programCounter++;
+
 		if(token != thensym)
 			error(16);
 
 		get();
 		statement();
+
+		// We need to write in the jump instruction to skip the body of the if when the condition is false
+		sprintf(code[jumpInstruction], "8 %d 0 %d", regCount, programCounter);
 	}
 	else if(token == whilesym)
 	{
-		int jumpAddress = programCounter;
+		int loopAddress, jumpInstruction, conditionReg;
 
+		loopAddress = programCounter;
 		get();
 		condition();
+
+		// Leave a space for the jump instruction that executes if the condition is false
+		jumpInstruction = programCounter++;
+		conditionReg = regCount;
+
 		if(token != dosym)
 			error(18);
 
@@ -255,7 +270,10 @@ void statement()
 		statement();
 
 		// Jump back to condition
-		sprintf(code[programCounter++], "7 0 0 %d", jumpAddress);
+		sprintf(code[programCounter++], "7 0 0 %d", loopAddress);
+
+		// We need to write in the jump instruction to skip the blcok when the condition is false
+		sprintf(code[jumpInstruction], "8 %d 0 %d", regCount, programCounter);
 	}
 
 	return;
@@ -273,7 +291,11 @@ void condition()
 	}
 	else
 	{
+		int expression1Reg, expression2Reg;
+
 		expression();
+		expression1Reg = regCount;
+
 		if(!isRelation())
 			error(20);
 
@@ -281,6 +303,35 @@ void condition()
 
 		get();
 		expression();
+		expression2Reg = regCount;
+
+		switch(relation)
+		{
+			// equals
+			case 9:
+				sprintf(code[programCounter], "19 %d %d %d", regCount++, expression1Reg, expression2Reg);
+				break;
+			// not equals
+			case 10:
+				sprintf(code[programCounter], "20 %d %d %d", regCount++, expression1Reg, expression2Reg);
+				break;
+			// less than
+			case 11:
+				sprintf(code[programCounter], "21 %d %d %d", regCount++, expression1Reg, expression2Reg);
+				break;
+			// Less than or equals
+			case 12:
+				sprintf(code[programCounter], "22 %d %d %d", regCount++, expression1Reg, expression2Reg);
+				break;
+			// greater than
+			case 13:
+				sprintf(code[programCounter], "23 %d %d %d", regCount++, expression1Reg, expression2Reg);
+				break;
+			// greater than or equals
+			case 14:
+				sprintf(code[programCounter], "24 %d %d %d", regCount++, expression1Reg, expression2Reg);
+				break;
+		}
 	}
 	return;
 }
@@ -434,6 +485,9 @@ int findIdentifier()
 
 void error(int errorCode)
 {
+	// Prevents vm from executing code
+	halt = 1;
+
 	switch(errorCode)
 	{
 		case 1:
