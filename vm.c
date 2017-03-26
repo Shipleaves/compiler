@@ -16,7 +16,7 @@ instruction inst[5000];
 FILE* out;
 int flag;
 
-void vm(int flag);
+void vm(int);
 void execute(FILE *in, FILE *out, char **opcode, instruction *inst, int numInst);
 int base(int *stack, int l, int base);
 void output(char*);
@@ -79,14 +79,11 @@ void execute(FILE *in, FILE *out, char **opcode, instruction *inst, int length)
     int stack[2000] = {0}, rf[16] = {0};
     // Another array to track where to put pipes for the activation records
     int ar[1000] = {0};
-    // Variables for the Program Counter, Base Pointer, and Stack Pointer
     int pc = 0, bp = 1, sp= 0;
     int halt = 0, index = 0;
 
-    // Print header
     output("\n\nInital Values			pc    bp    sp");
 
-    // The switch condition simulates the fetch cycle, and the body is the execute cycle
     while(pc < length)
     {
         // Check if we should exit

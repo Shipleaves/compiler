@@ -15,121 +15,145 @@ typedef struct
 
 symbol symbolTable[5000];
 int rf[5000];
-char* token;
-int instructionPointer = 0, symbolIndex = 0, sp = 0, flag = 0, level = 0,  regCount= 0;
+char* lexeme;
+int token, programCounter = 0, symbolIndex = 0, sp = 0, level = 0,  regCount= 0;
 FILE* out;
+
+int nulsym = 1, identsym = 2, numbersym = 3, plussym = 4, minussym = 5,
+multsym = 6, slashsym = 7, oddsym = 8, eqsym = 9, neqsym = 10, lessym = 11,
+leqsym = 12, gtrsym = 13, geqsym = 14, lparentsym = 15, rparentsym = 16,
+commasym = 17, semicolonsym = 18, periodsym = 19, becomessym = 20,
+beginsym = 21, endsym = 22, ifsym = 23, thensym = 24, whilesym = 25, dosym = 26,
+callsym = 27, constsym = 28, varsym = 29, procsym = 30, writesym = 31,
+readsym = 32, elsesym = 33;
 
 void parser(int);
 void block();
 void statement();
 void condition();
-void expression();
+int expression();
 void term();
 void factor();
-void growStack(int);
-void pushToStack(int);
 void get();
 int isRelation();
 int number();
 int isVariable();
 int isConstant();
+int findIdentifier();
 int stringToInt(char*);
+void print();
 void error(int);
 
 void parser(int directive)
 {
 	printf("\nBegin parsing\n\n");
 	out = fopen("instructions.txt", "w");
-	flag = directive;
+	lexeme = malloc(20*sizeof(char));
 
 	get();
-	printf("%s", token);
+	printf("%s", lexeme);
 	block();
-	if(strcmp(token, "periodsym") != 0)
+	if(token != periodsym)
 		error(9);
 
+	if(directive)
+		print();
+
+	free(lexeme);
 	return;
 }
 
 void block()
 {
 	// Count of local variables / constants
-	int localCount = 0;
+	int localCount = 0, i;
 	sp += 4;
 
-	if(strcmp(token, "constsym") == 0)
+	if(token == constsym)
 	{
 		do
 		{
 			get();
-			if(strcmp(token, "identsym") != 0)
+			if(token != varsym || token != constsym)
 				error(4);
 
-			strcpy(symbolTable[symbolIndex].name, token);
+			strcpy(symbolTable[symbolIndex].name, lexeme);
 			symbolTable[symbolIndex].kind = 1;
 
 			get();
-			if(strcmp(token, "eqsym") != 0)
+			if(token != eqsym)
 				error(3);
 
 			get();
 			if(!number())
 				error(2);
 
-			sp++;
-			symbolTable[symbolIndex].value = stringToInt(token);
+			symbolTable[symbolIndex].value = stringToInt(lexeme);
 			symbolTable[symbolIndex].address = sp;
+			symbolIndex++;
 			localCount++;
+			sp++;
 
 			get();
-		}while(strcmp(token, "commasym") == 0);
+		}while(token == commasym);
 
-		if(strcmp(token, "semicolonsym") != 0)
+		if(token != semicolonsym)
 			error(5);
 
 		get();
 	}
 
-	if(strcmp(token, "varsym") == 0)
+	// Allocate space on the stack
+	fprintf(out, "6 0 0 %d", sp);
+
+	for(i = 0; i < localCount; i++)
+	{
+		// Put the value in a register
+		fprintf(out, "1 %d 0 %d", i, symbolTable[symbolIndex-localCount+i].value);
+		// Store the value on the stack
+		fprintf(out, "3 %d 0 %d", i, symbolTable[symbolIndex-localCount+i].address);
+	}
+	localCount = 0;
+
+	if(token == varsym)
 	{
 		do
 		{
 			get();
-			if(strcmp(token, "identsym") != 0)
+			if(token != identsym)
 				error(4);
 
-				sp++;
-				strcpy(symbolTable[symbolIndex].name, token);
+				strcpy(symbolTable[symbolIndex].name, lexeme);
 				symbolTable[symbolIndex].kind = 2;
 				symbolTable[symbolIndex].address = sp;
 				localCount++;
+				sp++;
 
 			get();
-		}while(strcmp(token, "commasym") == 0);
+		}while(token == commasym);
 
-		if(strcmp(token, "semicolonsym") != 0)
+		if(token != semicolonsym)
 			error(5);
 	}
 
-	// Code generation
-	// TODO: Passing in SP won't work once we implement procedures
-	growStack(sp);
-	pushToStack(localCount);
+	// Allocate space on the stack
+	fprintf(out, "6 0 0 %d", localCount);
+	localCount = 0;
 
-	while(strcmp(token, "procsym") == 0)
+	while(token == procsym)
 	{
 		printf("Error: Procedures are note supported.\n");
 		get();
-		if(strcmp(token, "identsym") != 0)
+		if(token != identsym)
 			error(4);
 
 		get();
-		if(strcmp(token, "semicolonsym") != 0)
+		if(token != semicolonsym)
 			error(5);
 
 		get();
 		block();
-		if(strcmp(token, "semicolonsym") != 0)
+		if(token != semicolonsym)
 			error(5);
 
 		get();
@@ -140,11 +164,17 @@ void block()
 
 void statement()
 {
-	if(strcmp(token, "identsym") == 0)
+	int symbolTableIndex;
+
+	if(token == identsym)
 	{
+		symbolTableIndex = findIdentifier();
+		if(symbolTableIndex < 0)
+			error(11);
+
 		get();
-		if(strcmp(token, "beceomessym") != 0)
-			if(strcmp(token, "eqsym") == 0)
+		if(token != becomessym)
+			if(token == eqsym)
 				error(1);
 			else
 				error(13);
@@ -152,11 +182,11 @@ void statement()
 		get();
 		expression();
 	}
-	else if(strcmp(token, "callsym") == 0)
+	else if(token == callsym)
 	{
 		printf("Error: procedures are not supported.\n");
 		get();
-		if(strcmp(token, "identsym") != 0)
+		if(token != identsym)
 			error(14);
 
 		if(isConstant() || isVariable())
@@ -164,12 +194,12 @@ void statement()
 
 		get();
 	}
-	else if(strcmp(token, "beginsym") == 0)
+	else if(token == beginsym)
 	{
 		// TODO: Error code 7 here? Statement expected.
 		get();
 		statement();
-		while(strcmp(token, "semicolonsym") == 0)
+		while(token == semicolonsym)
 		{
 			get();
 			statement();
@@ -177,7 +207,7 @@ void statement()
 		// TODO: Error code 10 here? Missing semicolon between statements.
 	}
 
-	if(strcmp(token, "endsym") != 0)
+	if(token != endsym)
 		error(8);
 
 	get();
@@ -187,7 +217,7 @@ void statement()
 
 void condition()
 {
-	if(strcmp(token, "oddsym") != 0)
+	if(token != oddsym)
 	{
 		get();
 		expression();
@@ -204,13 +234,13 @@ void condition()
 	return;
 }
 
-void expression()
+int expression()
 {
-	if(strcmp(token, "plussym") == 0 || strcmp(token, "minussym") == 0)
+	if(token == plussym || token == minussym)
 		get();
 
 	term();
-	while(strcmp(token, "plussym") == 0 || strcmp(token, "minussym") == 0)
+	while(token == plussym || token == minussym)
 	{
 		get();
 		term();
@@ -221,7 +251,7 @@ void expression()
 void term()
 {
 	factor();
-	while(strcmp(token, "multsym") == 0 || strcmp(token, "slashsym") ==0)
+	while(token == multsym || token == slashsym)
 	{
 		get();
 		factor();
@@ -231,45 +261,27 @@ void term()
 
 void factor()
 {
-	if(strcmp(token, "identsym") == 0)
+	if(token == varsym || token == constsym)
 		get();
 	else if(number())
 		get();
-	else if(strcmp(token, "(") == 0)
+	else if(token == rparentsym)
 	{
 		get();
 		expression();
-		if(strcmp(token, ")") != 0)
+		if(token != lparentsym)
 			error(22);
 		get();
 	}
 	printf("Error:");
 }
 
-void growStack(int numToAllocate)
-{
-	fprintf(out, "6 0 0 %d\n", numToAllocate);
-	return;
-}
-
-void pushToStack(int numToPush)
-{
-	int i;
-	for(i = 0; i < numToPush; i++)
-	{
-		// Lit the value into register i
-		fprintf(out, "1 %d 0 %d\n", i, symbolTable[i+symbolIndex-numToPush].value);
-		// Store it on the stack
-		fprintf(out, "4 %d 0 %d\n", i, symbolTable[i+symbolIndex-numToPush].address);
-	}
-}
-
 void get()
 {
-	printf("%s", lexemeTable[0]);
-	strcpy(token, lexemeTable[instructionPointer]);
-	instructionPointer++;
-	printf("gotten");
+	strcpy(lexeme, lexemeTable[programCounter]);
+	token = tokenTable[programCounter];
+	programCounter++;
+
 	return;
 }
 
@@ -290,6 +302,11 @@ int isConstant()
 }
 
 int isVariable()
+{
+	return 1;
+}
+
+int findIdentifier()
 {
 	return 1;
 }
@@ -391,4 +408,9 @@ void error(int errorCode)
 			printf("This number is too larger.\n");
 			break;
 	}
+}
+
+void print()
+{
+
 }
