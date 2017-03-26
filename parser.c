@@ -43,7 +43,7 @@ int isRelation();
 int number();
 int getKind();
 int findIdentifier();
-void print();
+void print(int);
 void error(int);
 
 void parser(int directive)
@@ -62,7 +62,7 @@ void parser(int directive)
 
 	// Print the generated source code
 	if(directive)
-		print();
+		print(directive);
 
 	free(lexeme);
 	return;
@@ -503,7 +503,15 @@ void error(int errorCode)
 	}
 }
 
-void print()
+void print(int directive)
 {
-
+	printf("printer");
+	FILE* printer = fopen("instructions.txt", "r");
+	int ch;
+	while((ch = fgetc(printer)) != EOF)
+	{
+		fprintf(out, "%c", ch);
+		if(directive)
+			printf("%c", ch);
+	}
 }
