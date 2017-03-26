@@ -43,8 +43,8 @@ void get();
 int number();
 int getKind();
 int findIdentifier();
-void print(int);
 void error(int);
+void print(int);
 
 void parser(int directive)
 {
