@@ -8,6 +8,7 @@
 
 extern char** lexemeTable;
 extern int* tokenTable;
+extern FILE* out;
 
 extern void lexer(int);
 

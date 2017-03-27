@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "lexer.h"
 #include "vm.h"
 #include "parser.h"
 
@@ -20,13 +21,11 @@ typedef struct
 // This struct array simulates the Instruction Register (or rather,
 // each index is a state of the IR at a particular time)
 instruction inst[5000];
-FILE* out;
 int flag;
 
 void vm(int);
 void execute(FILE *out, char **opcode, instruction *inst, int numInst);
 int base(int *stack, int l, int base);
-void output(char*);
 instruction getInst(char *codeString);
 
 void vm(int directive)
@@ -42,11 +41,16 @@ void vm(int directive)
         "sio", "sio", "sio", "neg", "add", "sub", "mul", "div",
         "odd", "mod", "eql", "neq", "lss", "leq", "gtr", "geq"
     };
-    out = fopen("log.txt", "w");
     flag = directive;
 
     // Print the header
-    output("Line	OP	R	L	M");
+    fprintf(out, "\n\nVM Execution Trace\n");
+    if(flag)
+        printf("\n\nVM Execution Trace\n");
+
+    fprintf(out, "Line	OP	R	L	M");
+    if(flag)
+        printf("Line	OP	R	L	M");
 
     // This while loop reads in and stores the instructions
     // Then formats and prints them, as long as there are instructions to be read.
@@ -55,6 +59,7 @@ void vm(int directive)
     for(i = 0; i < programCounter; i++)
     {
         inst[i] = getInst(code[i]);
+        fprintf(out, "\n%3d %7s %5d %7d %7d", i, opcode[inst[i].op], inst[i].r, inst[i].l, inst[i].m);
         if(flag)
             printf("\n%3d %7s %5d %7d %7d", i, opcode[inst[i].op], inst[i].r, inst[i].l, inst[i].m);
     }
@@ -77,7 +82,9 @@ void execute(FILE *out, char **opcode, instruction *inst, int length)
     int pc = 0, bp = 1, sp= 0;
     int halt = 0, index = 0, printFlag = 0, readFlag = 0, sioOutput;
 
-    output("\n\nInital Values			pc    bp    sp");
+    fprintf(out, "\n\nInital Values			pc    bp    sp");
+    if(flag)
+        printf("\n\nInital Values			pc    bp    sp");
 
     while(pc < length)
     {
@@ -229,7 +236,11 @@ void execute(FILE *out, char **opcode, instruction *inst, int length)
         {
             // Print pipes at start of activation records
             if(ar[index] == 1)
-                output("    | ");
+            {
+                fprintf(out, "    | ");
+                if(flag)
+                    printf("    | ");
+            }
 
             fprintf(out, " %4d", stack[index]);
             if(flag)
@@ -239,8 +250,8 @@ void execute(FILE *out, char **opcode, instruction *inst, int length)
 
         if(printFlag)
         {
-            fprintf(out, "\n%d", sioOutput);
-            printf("\n%d", sioOutput);
+            fprintf(out, "\nProgram Output: %d\n", sioOutput);
+            printf("\nProgram Output: %d\n", sioOutput);
 
             printFlag = 0;
         }

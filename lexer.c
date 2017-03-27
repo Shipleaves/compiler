@@ -33,11 +33,9 @@ void addKeyword(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenC
 void addNumber(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenCount);
 int addSymbol(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenCount);
 void handleComments(char code[], int count);
-void output(char* text);
 
 void lexer(int directive)
 {
-	printf("\n\nBegin Lexing\n");
     symbol symbolTable[5000];
     char code[5000];
     char* lexeme;
@@ -67,13 +65,15 @@ void lexer(int directive)
     count = 0;
 
     // Print out the source code and put it into the code array
-    output("Source Program:\n");
+    fprintf(out, "Source Program:\n");
+	if(flag)
+		printf("Source Program:\n");
     while(1)
     {
 		ch = fgetc(in);
 		if(feof(in))
 			break;
-			
+
         fprintf(out, "%c", ch);
 		if(flag)
 			printf("%c", ch);
@@ -183,7 +183,9 @@ void lexer(int directive)
         free(lexeme);
     }
 
-    output("\n\nLexeme Table:\nlexeme\t\ttoken type\n");
+    fprintf(out, "\n\nLexeme Table:\nlexeme\t\ttoken type\n");
+	if(flag)
+		printf("\n\nLexeme Table:\nlexeme\t\ttoken type\n");
     for(count = 0; count < tokenCount; count++)
     {
         if(strlen(lexemeTable[count]) > 8)
@@ -516,14 +518,5 @@ void handleComments(char code[], int count)
                 return;
             }
         }
-    }
-}
-
-void output(char* text)
-{
-    fprintf(out, "%s", text);
-    if(flag)
-    {
-        printf("%s", text);
     }
 }

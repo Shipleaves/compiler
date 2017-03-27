@@ -15,11 +15,8 @@ int main(int argc, char* argv[])
     int i;
     int lexerFlag = 0, parserFlag = 0, vmFlag = 0;
 
-    printf("Compiling with the following directives:\n");
     for(i = 1; i < argc; i++)
     {
-        printf("%s\n", argv[i]);
-
         if(strcmp(argv[i], "-l") == 0)
             lexerFlag = 1;
         else if(strcmp(argv[i], "-a") == 0)

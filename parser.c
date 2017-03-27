@@ -24,7 +24,6 @@ char** code;
 int rf[5000];
 char* lexeme;
 int halt, token, currInstruction = 0, programCounter = 0, symbolIndex = 0, sp = 0, level = 0,  regCount= 0;
-FILE* out;
 
 int nulsym = 1, identsym = 2, numbersym = 3, plussym = 4, minussym = 5,
 multsym = 6, slashsym = 7, oddsym = 8, eqsym = 9, neqsym = 10, lessym = 11,
@@ -50,8 +49,6 @@ void print(int);
 
 void parser(int directive)
 {
-	printf("\n\nBegin Parsing\n");
-	out = fopen("instructions.txt", "w");
 	int i;
 	lexeme = malloc(20*sizeof(char));
 	code = malloc(5000*sizeof(char*));
@@ -535,7 +532,6 @@ void error(int errorCode)
 	// Prevents VM from executing code
 	halt = 1;
 
-	printf("On line %d with token %s ", programCounter, lexeme);
 	switch(errorCode)
 	{
 		case 1:
@@ -572,7 +568,6 @@ void error(int errorCode)
 			printf("Error: semicolon between statements missing\n");
 			break;
 		case 11:
-			// TODO: unused error code.
 			printf("Error: undeclared identifier.\n");
 			break;
 		case 12:
@@ -621,14 +616,16 @@ void error(int errorCode)
 			break;
 		case 25:
 			// TODO: unused error code.
-			printf("This number is too larger.\n");
+			printf("This number is too large.\n");
 			break;
 	}
 }
 
 void print(int directive)
 {
-	printf("\n\nGenerated Code:\n");
+	fprintf(out, "\n\nGenerated Code:\n");
+	if(directive)
+		printf("\n\nGenerated Code:\n");
 	int i;
 	for(i = 0; i < programCounter; i++)
 	{
@@ -637,5 +634,9 @@ void print(int directive)
 			printf("%d: %s\n", i, code[i]);
 	}
 	if(!halt)
-		printf("\nThe program is syntactically correct.\n");
+	{
+		fprintf(out, "\nThe program is syntactically correct.\n");
+		if(directive)
+			printf("\nThe program is syntactically correct.\n");
+	}
 }
