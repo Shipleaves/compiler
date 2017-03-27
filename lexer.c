@@ -37,6 +37,7 @@ void output(char* text);
 
 void lexer(int directive)
 {
+	printf("\n\nBegin Lexing\n");
     symbol symbolTable[5000];
     char code[5000];
     char* lexeme;
@@ -67,9 +68,12 @@ void lexer(int directive)
 
     // Print out the source code and put it into the code array
     output("Source Program:\n");
-    while(!feof(in))
+    while(1)
     {
 		ch = fgetc(in);
+		if(feof(in))
+			break;
+			
         fprintf(out, "%c", ch);
 		if(flag)
 			printf("%c", ch);
@@ -77,6 +81,8 @@ void lexer(int directive)
         code[count] = ch;
         count++;
     }
+
+	code[count] = '\0';
     fclose(in);
 
     // Begin scanning the source code
@@ -430,13 +436,6 @@ int addSymbol(char* lexeme, char* lexemeTable[], int tokenTable[], int* tokenCou
     {
         strcpy(lexemeTable[*tokenCount], lexeme);
         tokenTable[*tokenCount] = 17;
-        *tokenCount += 1;
-    }
-	// Don't judge me
-    else if(strcmp(lexeme, ".ÿ") == 0)
-    {
-        strcpy(lexemeTable[*tokenCount], lexeme);
-        tokenTable[*tokenCount] = 19;
         *tokenCount += 1;
     }
 	else if(strcmp(lexeme, ".") == 0)

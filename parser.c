@@ -50,6 +50,7 @@ void print(int);
 
 void parser(int directive)
 {
+	printf("\n\nBegin Parsing\n");
 	out = fopen("instructions.txt", "w");
 	int i;
 	lexeme = malloc(20*sizeof(char));
@@ -627,6 +628,7 @@ void error(int errorCode)
 
 void print(int directive)
 {
+	printf("\n\nGenerated Code:\n");
 	int i;
 	for(i = 0; i < programCounter; i++)
 	{
@@ -634,4 +636,6 @@ void print(int directive)
 		if(directive)
 			printf("%d: %s\n", i, code[i]);
 	}
+	if(!halt)
+		printf("\nThe program is syntactically correct.\n");
 }
