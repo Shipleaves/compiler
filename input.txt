@@ -1,24 +1,11 @@
-/*
- * Factorial.c
- * Calculates n!, where n is a value the user inputs.
- * Output: The factorial of the value that the user entered.
- */
-
-var input, result;
-begin
-	result := 1;
-	read input;
-	if input < 0 then
-		result := 0;
-	if input = 0 then
-		result := 1;
-	if input > 0 then
+var x;
+procedure A;
+	var y;
 	begin
-		while input <> 0 do
-		begin
-			result := result * input;
-			input := input - 1
-		end
+		y := 1;
+		x:=y+3;
 	end;
-	write result
+begin
+	call A;
+	write x;
 end.
