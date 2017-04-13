@@ -16,7 +16,6 @@ typedef struct
 	int value; 		// number
 	int level; 		// L level
 	int address; 		// M address
-	int reg;
 }symbol;
 
 symbol symbolTable[5000];
@@ -43,6 +42,7 @@ void factor();
 void get();
 int number();
 int getKind();
+void decreaseLevel();
 int findIdentifier();
 void error(int);
 void print(int);
@@ -154,12 +154,19 @@ void block()
 	sprintf(code[programCounter++], "6 0 0 %d", localCount);
 	localCount = 0;
 
+	// TODO: finish putting in procedures
 	while(token == procsym)
 	{
-		printf("Error: procedures are not supported.\n");
 		get();
 		if(token != identsym)
 			error(4);
+
+		strcpy(symbolTable[symbolIndex].name, lexeme);
+		symbolTable[symbolIndex].kind = 3;
+		symbolTable[symbolIndex].address = sp;
+		symbolTable[symbolIndex].level = level;
+		symbolIndex++;
+		level++;
 
 		get();
 		if(token != semicolonsym)
@@ -206,7 +213,7 @@ void statement()
 	}
 	else if(token == callsym)
 	{
-		printf("Error: procedures are not supported.\n");
+		// TODO: call procedures
 		get();
 		if(token != identsym)
 			error(14);

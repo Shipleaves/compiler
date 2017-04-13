@@ -1,0 +1,41 @@
+/*
+ * Factorial.pl0
+ * Calculates n!, where n is a value the user inputs.
+ * Output: The factorial of the value that the user entered.
+ */
+
+var input, result;
+begin
+
+/* Initialize result to 1. */
+result := 1;
+
+/* Read in the number to calculate the factorial of. */
+read input;
+
+/* A negative number is invalid, so result is set to 0. */
+if input < 0 then
+	result := 0;
+
+/* 0! is 1. */
+if input = 0 then
+	result := 1;
+
+/* Calculate n! iteratively. */
+if input > 0 then
+begin
+
+	while input <> 0 do
+	begin
+	
+		result := result * input;
+		input := input - 1
+	
+	end
+
+end;
+
+/* Print the result. */
+write result
+
+end.
