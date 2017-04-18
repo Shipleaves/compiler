@@ -1,0 +1,22 @@
+var a;
+procedure A;
+	var b, c;
+	procedure B;
+		var c;
+    		begin
+      			c := 1; 
+      			b := c + 2;
+    		end;
+  	begin
+    		call B;
+    		c := b + 4;
+    		a := c + 5;
+  	end;
+begin
+	call A;
+	if a < 0 then
+		a := -1
+	else
+		a :=  a + 1;
+		write a;
+end.

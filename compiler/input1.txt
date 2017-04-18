@@ -1,0 +1,17 @@
+var x;
+procedure A;
+	var y;
+	procedure B;
+		var z;
+		begin
+			z := 2;
+			y := z + 1;
+		end;
+	begin
+		call B;
+		x := y + 10;
+	end;
+begin
+	call A;
+	write x;
+end.

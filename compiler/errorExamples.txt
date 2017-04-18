@@ -1,0 +1,15 @@
+const a b = jkl; /*Error 5 and Error 2*/
+var ; /*Error 4*/
+begin
+    x = 10; /*Error 1 and Error 11*/
+    y 12; /*Error 11, Error 13 and Error 3*/
+    a := (5; /*Error 12 and Error 22*/
+    call 5; /*Error 14*/
+    call a; /*Error 15*/
+    if a > 5 /*Error 16*/
+    begin
+    end
+    while a 11 /*Error 18 and Error 20*/
+    begin
+    end
+end /*Error 9*/

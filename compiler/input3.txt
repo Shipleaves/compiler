@@ -1,0 +1,9 @@
+var x, y;
+begin
+	x:=7;
+	y:=8;
+	if x > 5 then
+		write x
+	else
+		write y
+end.

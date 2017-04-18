@@ -1,0 +1,11 @@
+var x;
+procedure A;
+	var y;
+	begin
+		y := 1;
+		x := y + 10;
+	end;
+begin
+	call A;
+	write x;
+end.
